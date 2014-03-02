@@ -1,6 +1,4 @@
-using System;
-
-namespace Xamarin.PSD
+namespace Psd.Portable
 {
 	/// <summary>
 	/// This structure contains display information about each channel

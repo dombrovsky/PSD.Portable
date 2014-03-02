@@ -1,8 +1,8 @@
 using System;
 
-namespace Xamarin.PSD
+namespace Psd.Portable
 {
-	public class PSDException : ApplicationException
+	public class PSDException : Exception
 	{
 		public PSDException () :base() {}
 		public PSDException(string message) : base(message) {}

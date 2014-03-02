@@ -1,6 +1,4 @@
-using System;
-
-namespace Xamarin.PSD
+namespace Psd.Portable
 {
 	/// <summary>
 	/// ThumbNail class

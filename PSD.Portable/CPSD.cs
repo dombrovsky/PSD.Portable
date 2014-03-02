@@ -1,11 +1,8 @@
 using System;
 using System.IO;
-using System.Text;
-using System.Drawing;
-using MonoTouch.UIKit;
-using MonoTouch.Foundation;
+using System.Linq;
 
-namespace Xamarin.PSD
+namespace Psd.Portable
 {
 	/// <summary>
 	/// Main class is for opening Adobe Photoshop files
@@ -33,17 +30,6 @@ namespace Xamarin.PSD
 		public Color[] Buffer {
 			get { return buffer; }
 		}
-		
-		public CPSD(string strPathName)
-		{
-			m_bResolutionInfoFilled = false;
-			m_bThumbnailFilled = false;
-			m_bCopyright = false;
-			m_nColourCount = -1;
-			m_nGlobalAngle = 30;
-			m_nCompression = -1;
-			Load(strPathName);
-		}
 
 		public CPSD(Stream stream)
 		{
@@ -56,12 +42,6 @@ namespace Xamarin.PSD
 			Load(stream);
 		}
 		// construction, destruction
-
-		private void Load (string strPathName) {
-			using (FileStream stream = new FileStream(strPathName, FileMode.Open, FileAccess.Read, FileShare.Read)) {
-				Load (stream);
-			}
-		}
 		
 		private void Load (Stream stream)
 		{
@@ -172,9 +152,10 @@ namespace Xamarin.PSD
 			byte [] Mode       = binReader.ReadBytes(2); // colour mode of the file
 			// Btmap=0, Grayscale=1, Indexed=2, RGB=3,
 			// CMYK=4, Multichannel=7, Duotone=8, Lab=9
-			ASCIIEncoding encoding = new ASCIIEncoding();
 
-			if( encoding.GetString(Signature).Equals("8BPS") && Version[1] == 0x01)
+            byte[] signature = { 56, 66, 80, 83 }; // 8BPS string ASCII representation
+
+			if(signature.SequenceEqual(Signature) && Version[1] == 0x01)
 			{
 				m_HeaderInfo = new HeaderInfo(); 
 
@@ -242,6 +223,7 @@ namespace Xamarin.PSD
 			int nBytesRead = 0;
 			int nTotalBytes = m_ImageResource.nLength;
 			long nStreamLen = stream.Length;
+            byte[] signature = { 56, 66, 73, 77 }; // 8BIM string ASCII representation
 
 			while(stream.Position < nStreamLen && nBytesRead < nTotalBytes)
 			{
@@ -249,9 +231,7 @@ namespace Xamarin.PSD
 				m_ImageResource.OSType  = binReader.ReadBytes(4);
 				nBytesRead += 4;
 
-				ASCIIEncoding encoding = new ASCIIEncoding();
-				
-				if(encoding.GetString(m_ImageResource.OSType).Equals("8BIM"))
+                if (signature.SequenceEqual(m_ImageResource.OSType))
 				{
 					byte [] ID = binReader.ReadBytes(2);
 					nBytesRead += 2;
@@ -837,7 +817,7 @@ namespace Xamarin.PSD
 							if(nValue>255) nValue = 255;
 							else if(nValue<0) nValue = 0;
 
-							nColor = Color.FromArgb(nValue, nValue, nValue);
+                            nColor = new Color((byte)nValue, (byte)nValue, (byte)nValue);
 							buffer[bufferPointer++] = nColor;
 							
 							nCounter += bytesPerPixelPerChannel;
@@ -866,7 +846,7 @@ namespace Xamarin.PSD
 							nGreen = (int)m_ColorModeData.ColourData[nIndex+256];
 							nBlue = (int)m_ColorModeData.ColourData[nIndex+2*256];
 
-							nColor = Color.FromArgb(nRed, nGreen, nBlue);
+                            nColor = new Color((byte)nRed, (byte)nGreen, (byte)nBlue);
 							buffer[bufferPointer++] = nColor;
 							// WinInvoke32.SetPixel(hdcMemory, nCol, nRow, nColor);
 							nCol++;
@@ -907,7 +887,7 @@ namespace Xamarin.PSD
 						SwapBytes(ColorValue,nBytesToRead);
 						nBlue = BitConverter.ToInt32(ColorValue,0);
 
-						nColor = Color.FromArgb(nRed, nGreen, nBlue);
+                        nColor = new Color((byte)nRed, (byte)nGreen, (byte)nBlue);
 						buffer[bufferPointer++] = nColor;
 						nCol++;
 						if ( nWidth <= nCol )
@@ -1147,7 +1127,7 @@ namespace Xamarin.PSD
 			if(nBlue<0)	nBlue = 0;
 			else if(nBlue>255) nBlue = 255;
 
-			return Color.FromArgb(nRed,nGreen,nBlue);
+            return new Color((byte)nRed, (byte)nGreen, (byte)nBlue);
 		}
 
 		protected static Color CMYKToRGB(double C, double M, double Y, double K)
@@ -1163,7 +1143,7 @@ namespace Xamarin.PSD
 			if(nBlue<0)	nBlue = 0;
 			else if(nBlue>255) nBlue = 255;
 
-			return Color.FromArgb(nRed,nGreen,nBlue);
+            return new Color((byte)nRed, (byte)nGreen, (byte)nBlue);
 		}
 		
 		protected static bool SwapBytes(byte [] array)
